@@ -79,6 +79,10 @@ modMenu()
     
     self toggleMenuVisibility(false, menuElements);
     
+    // Set initial selected item
+    menuElements["options"][currentItem].color = (0.5, 0, 0.5);  // Highlight color
+    menuElements["options"][currentItem] setText("-> " + menuElements["options"][currentItem].originalText);
+    
     while(1)
     {
         if(self AdsButtonPressed() && self MeleeButtonPressed() && getTime() > lastInputTime + 500)
@@ -161,6 +165,7 @@ createMenu(title, items)
     for(i = 0; i < items.size; i++)
     {
         menuElements["options"][i] = self createText("objective", 1.1, "LEFT", "TOP", 75, startY + (i * spacing), items[i]);
+        menuElements["options"][i].originalText = items[i];
     }
     
     menuElements["instructions"] = self createText("objective", 0.9, "LEFT", "BOTTOM", 25, 365, "^3Jump^7: Select | ^3Attack^7: Back");
@@ -182,19 +187,30 @@ toggleMenuVisibility(visible, menuElements)
 
 handleMenuInput(menuElements, currentItem, itemCount, highlightColor)
 {
+    newItem = currentItem;
+
     if(self actionSlotOneButtonPressed() && getTime() > self.lastInputTime + 200)
     {
-        menuElements["options"][currentItem].color = (1, 1, 1);
-        currentItem = (currentItem - 1 + itemCount) % itemCount;
-        menuElements["options"][currentItem].color = highlightColor;
+        newItem = (currentItem - 1 + itemCount) % itemCount;
         self.lastInputTime = getTime();
     }
     else if(self actionSlotTwoButtonPressed() && getTime() > self.lastInputTime + 200)
     {
-        menuElements["options"][currentItem].color = (1, 1, 1);
-        currentItem = (currentItem + 1) % itemCount;
-        menuElements["options"][currentItem].color = highlightColor;
+        newItem = (currentItem + 1) % itemCount;
         self.lastInputTime = getTime();
+    }
+
+    if(newItem != currentItem)
+    {
+        // Reset previous item
+        menuElements["options"][currentItem].color = (1, 1, 1);
+        menuElements["options"][currentItem] setText(menuElements["options"][currentItem].originalText);
+
+        // Update new item
+        menuElements["options"][newItem].color = highlightColor;
+        menuElements["options"][newItem] setText("-> " + menuElements["options"][newItem].originalText);
+
+        currentItem = newItem;
     }
     
     return currentItem;
