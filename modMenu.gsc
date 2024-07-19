@@ -35,6 +35,10 @@ onPlayerSpawned()
     for(;;)
     {
         self waittill("spawned_player");
+        self.menuOpen = false;
+        self.currentItem = 0;
+        self.lastInputTime = 0;
+        self.menuElements = self createPlayerMenu();  // Create menu elements for each player
         self thread modMenu();
         self thread init_player_hud();
         self thread set_increased_health();
@@ -44,19 +48,8 @@ onPlayerSpawned()
     }
 }
 
-create_menu_instructions()
+createPlayerMenu()
 {
-    self endon("disconnect");
-    
-    instructions = self createText("objective", 1.0, "RIGHT", "TOP", -10, 10, "^3ADS + Melee^7: Open Menu");
-    instructions.alpha = 0.8;
-    instructions.hideWhenInMenu = true;
-}
-
-modMenu()
-{
-    self endon("disconnect");
-    
     menuTitle = "^2Control ^4Panel";
     menuItems = [];
     menuItems[0] = "Rankup ($40,000)";
@@ -73,32 +66,35 @@ modMenu()
     
     menuElements = self createMenu(menuTitle, menuItems);
     
-    currentItem = 0;
-    menuOpen = false;
-    lastInputTime = 0;
-    
     self toggleMenuVisibility(false, menuElements);
     
     // Set initial selected item
-    menuElements["options"][currentItem].color = (0.5, 0, 0.5);  // Highlight color
-    menuElements["options"][currentItem] setText("-> " + menuElements["options"][currentItem].originalText);
+    menuElements["options"][0].color = (0.5, 0, 0.5);  // Highlight color
+    menuElements["options"][0] setText("-> " + menuElements["options"][0].originalText);
+    
+    return menuElements;
+}
+
+modMenu()
+{
+    self endon("disconnect");
     
     while(1)
     {
-        if(self AdsButtonPressed() && self MeleeButtonPressed() && getTime() > lastInputTime + 500)
+        if(self AdsButtonPressed() && self MeleeButtonPressed() && getTime() > self.lastInputTime + 500)
         {
-            menuOpen = !menuOpen;
-            self toggleMenuVisibility(menuOpen, menuElements);
-            lastInputTime = getTime();
+            self.menuOpen = !self.menuOpen;
+            self toggleMenuVisibility(self.menuOpen, self.menuElements);
+            self.lastInputTime = getTime();
         }
         
-        if(menuOpen)
+        if(self.menuOpen)
         {
-            currentItem = self handleMenuInput(menuElements, currentItem, menuItems.size, (0.5, 0, 0.5));
+            self.currentItem = self handleMenuInput(self.menuElements, self.currentItem, self.menuElements["options"].size, (0.5, 0, 0.5));
             
-            if(self jumpButtonPressed() && getTime() > lastInputTime + 200)
+            if(self jumpButtonPressed() && getTime() > self.lastInputTime + 200)
             {
-                switch(currentItem)
+                switch(self.currentItem)
                 {
                     case 0:
                         self thread rankup_logic();
@@ -134,18 +130,27 @@ modMenu()
                         self thread toggleAfk(self);
                         break;
                 }
-                lastInputTime = getTime();
+                self.lastInputTime = getTime();
             }
-            else if(self stanceButtonPressed() && getTime() > lastInputTime + 200)
+            else if(self stanceButtonPressed() && getTime() > self.lastInputTime + 200)
             {
-                menuOpen = false;
-                self toggleMenuVisibility(false, menuElements);
-                lastInputTime = getTime();
+                self.menuOpen = false;
+                self toggleMenuVisibility(false, self.menuElements);
+                self.lastInputTime = getTime();
             }
         }
         
         wait 0.05;
     }
+}
+
+create_menu_instructions()
+{
+    self endon("disconnect");
+    
+    instructions = self createText("objective", 1.0, "RIGHT", "TOP", -10, 10, "^3ADS + Melee^7: Open Menu");
+    instructions.alpha = 0.8;
+    instructions.hideWhenInMenu = true;
 }
 
 createMenu(title, items)
@@ -443,7 +448,7 @@ moneyMultiplier()
         
         if(newScore > oldScore)
         {
-            pointsEarned = newScore - oldScore;
+             pointsEarned = newScore - oldScore;
             bonusPoints = int(pointsEarned * (multiplier - 1));
             
             if(bonusPoints > 0)
