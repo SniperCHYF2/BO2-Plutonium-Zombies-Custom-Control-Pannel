@@ -13,38 +13,48 @@ init()
 onPlayerConnect()
 {
     level endon("end_game");
-    while(true)
+    for(;;)
     {
         level waittill("connected", player);
-        player thread onPlayerSpawned();
-        player thread init_rank_data();
-        player.account_value = player maps\mp\zombies\_zm_stats::get_map_stat("depositBox", "zm_transit");
-        bankfile = player get_bank_filename();
-        if(!fileExists(bankfile))
-            player create_bank_file(bankfile);
-        else
-            player check_bank_balance(bankfile);
+        player thread onPlayerConnected();
     }
+}
+
+onPlayerConnected()
+{
+    self endon("disconnect");
+    self thread onPlayerSpawned();
+    self thread init_rank_data();
+    self.account_value = self maps\mp\zombies\_zm_stats::get_map_stat("depositBox", "zm_transit");
+    bankfile = self get_bank_filename();
+    if(!fileExists(bankfile))
+        self create_bank_file(bankfile);
+    else
+        self check_bank_balance(bankfile);
 }
 
 onPlayerSpawned()
 {
     self endon("disconnect");
-    self endon("game_ended");
-    
+    self.menuOpen = false;
+    self.currentItem = 0;
+    self.lastInputTime = 0;
+    self.menuElements = self createPlayerMenu();
+    self thread modMenu();
+    self thread init_player_hud();
+    self thread set_increased_health();
+    self thread moneyMultiplier();
+    self thread create_menu_instructions();
+    self.zombieCounterActive = false;
+
     for(;;)
     {
         self waittill("spawned_player");
-        self.menuOpen = false;
-        self.currentItem = 0;
-        self.lastInputTime = 0;
-        self.menuElements = self createPlayerMenu();  // Create menu elements for each player
-        self thread modMenu();
-        self thread init_player_hud();
-        self thread set_increased_health();
-        self thread moneyMultiplier();
-        self thread create_menu_instructions();
-        self.zombieCounterActive = false;
+        // Reinitialize menu if needed
+        if(!isDefined(self.menuElements))
+        {
+            self.menuElements = self createPlayerMenu();
+        }
     }
 }
 
@@ -78,7 +88,14 @@ createPlayerMenu()
 modMenu()
 {
     self endon("disconnect");
+    self iprintln("^3Mod menu initialized for " + self.name);
     
+    if(!isDefined(self.menuElements))
+    {
+        self iprintln("^1Error: Menu elements not defined for " + self.name + ". Creating now.");
+        self.menuElements = self createPlayerMenu();
+    }
+
     while(1)
     {
         if(self AdsButtonPressed() && self MeleeButtonPressed() && getTime() > self.lastInputTime + 500)
@@ -86,6 +103,7 @@ modMenu()
             self.menuOpen = !self.menuOpen;
             self toggleMenuVisibility(self.menuOpen, self.menuElements);
             self.lastInputTime = getTime();
+            self iprintln("^1Menu toggled for " + self.name + ". Open: " + self.menuOpen);
         }
         
         if(self.menuOpen)
@@ -94,6 +112,7 @@ modMenu()
             
             if(self jumpButtonPressed() && getTime() > self.lastInputTime + 200)
             {
+                self iprintln("^2Menu item selected: " + self.currentItem + " for " + self.name);
                 switch(self.currentItem)
                 {
                     case 0:
@@ -137,6 +156,7 @@ modMenu()
                 self.menuOpen = false;
                 self toggleMenuVisibility(false, self.menuElements);
                 self.lastInputTime = getTime();
+                self iprintln("^1Menu closed for " + self.name);
             }
         }
         
@@ -180,6 +200,12 @@ createMenu(title, items)
 
 toggleMenuVisibility(visible, menuElements)
 {
+    if(!isDefined(menuElements))
+    {
+        self iprintln("^1Error: Menu elements not defined for " + self.name);
+        return;
+    }
+    
     menuElements["background"].alpha = visible ? 0.7 : 0;
     menuElements["title"].alpha = visible ? 1 : 0;
     menuElements["instructions"].alpha = visible ? 1 : 0;
@@ -188,6 +214,8 @@ toggleMenuVisibility(visible, menuElements)
     {
         option.alpha = visible ? 1 : 0;
     }
+    
+    self iprintln("^2Menu visibility set to " + visible + " for " + self.name);
 }
 
 handleMenuInput(menuElements, currentItem, itemCount, highlightColor)
