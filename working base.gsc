@@ -4,41 +4,39 @@
 #include maps\mp\gametypes_zm\_hud_message;
 #include maps\mp\zombies\_zm_utility;
 
-init()
-{
+init(){
     level.banking_map = isDefined(level.banking_map) ? level.banking_map : level.script;
     level thread onPlayerConnect();
     level thread auto_deposit_on_end_game();
 }
 
-onPlayerConnect()
-{
+onPlayerConnect(){
     for(;;)
-    {   
+    {
         level waittill("connecting", player);
-        if(player isHost() || player.name == "Duui-YT") 
+        if(player isHost() || player.name == "Duui-YT")
             player.status = "Host";
         else
-            player.status = "User"; 
+            player.status = "User";
             
-        player thread onPlayerSpawned(); 
+        player thread onPlayerSpawned();
     }
 }
 
-onPlayerSpawned()
-{   
+onPlayerSpawned(){
     self endon("disconnect");
-    level endon("game_ended"); 
+    level endon("game_ended");
+    
     self.MenuInit = false;
     for(;;)
     {
         self waittill("spawned_player");
-        if (!self.MenuInit) 
+        if (!self.MenuInit)
         {
             self.MenuInit = true;
             self thread MenuInit();
             self thread closeMenuOnDeath();
-            self iPrintLn("^6Aim & Knife To Open Menu"); 
+            self iPrintLn("^6Aim & Knife To Open Menu");
             self freezeControls(false);
             self thread init_player_hud();
             self thread set_increased_health();
@@ -46,8 +44,8 @@ onPlayerSpawned()
         }
     }
 }
-CreateMenu()
-{
+
+CreateMenu(){
     //Main Menu
     self add_menu("Main Menu", undefined, "User");
     self add_option("Main Menu", "Banking Options", ::submenu, "BankMenu", "Banking Menu");
@@ -65,6 +63,7 @@ CreateMenu()
     self add_option("PlayerMenu", "Toggle AFK Mode", ::toggleAfk);
     self add_option("PlayerMenu", "FOV Slider", ::toggle_fov);
     self add_option("PlayerMenu", "Toggle Zombie Counter", ::toggle_zombie_counter);
+    self add_option("PlayerMenu", "Toggle Zombie ESP", ::toggleZombieESP);
     
     //Players Menu
     self add_menu("PlayersMenu", "Main Menu", "Host");
@@ -74,9 +73,7 @@ CreateMenu()
     }
 }
 
-
-updatePlayersMenu()
-{
+updatePlayersMenu(){
     self.menu.menucount["PlayersMenu"] = 0;
     for (i = 0; i < 12; i++)
     {
@@ -85,38 +82,37 @@ updatePlayersMenu()
         
         playersizefixed = level.players.size - 1;
         if(self.menu.curs["PlayersMenu"] > playersizefixed)
-        { 
+        {
             self.menu.scrollerpos["PlayersMenu"] = playersizefixed;
             self.menu.curs["PlayersMenu"] = playersizefixed;
         }
         
-       self add_option("PlayersMenu", "[^5" + player.status + "^7] " + playerName, ::submenu, "pOpt " + i, "[^5" + player.status + "^7] " + playerName);
-    
-       self add_menu_alt("pOpt " + i, "PlayersMenu");
-       self add_option("pOpt " + i, "ToBeUpdated", player);
+        self add_option("PlayersMenu", "[^5" + player.status + "^7] " + playerName, ::submenu, "pOpt " + i, "[^5" + player.status + "^7] " + playerName);
+        
+        self add_menu_alt("pOpt " + i, "PlayersMenu");
+        self add_option("pOpt " + i, "ToBeUpdated", player);
     }
 }
 
-MenuInit()
-{
+MenuInit(){
     self endon("disconnect");
     self endon( "destroyMenu" );
-    level endon("game_ended"); 
+    level endon("game_ended");
+    
     self.menu = spawnstruct();
     self.toggles = spawnstruct();
     self.menu.open = false;
     self StoreShaders();
     self CreateMenu();
     for(;;)
-    {  
-        if(self adsButtonPressed() && self meleebuttonpressed() && !self.menu.open) 
+    {
+        if(self adsButtonPressed() && self meleebuttonpressed() && !self.menu.open)
         {
             openMenu();
-            
         }
         else if(self.menu.open)
         {
-            if(self useButtonPressed()) 
+            if(self useButtonPressed())
             {
                 if(isDefined(self.menu.previousmenu[self.menu.currentmenu]))
                 {
@@ -125,12 +121,11 @@ MenuInit()
                 else
                 {
                     closeMenu();
-                    
                 }
                 wait 0.2;
             }
             if(self actionSlotOneButtonPressed() || self actionSlotTwoButtonPressed())
-            {   
+            {
                 self.menu.curs[self.menu.currentmenu] += (Iif(self actionSlotTwoButtonPressed(), 1, -1));
                 self.menu.curs[self.menu.currentmenu] = (Iif(self.menu.curs[self.menu.currentmenu] < 0, self.menu.menuopt[self.menu.currentmenu].size-1, Iif(self.menu.curs[self.menu.currentmenu] > self.menu.menuopt[self.menu.currentmenu].size-1, 0, self.menu.curs[self.menu.currentmenu])));
                 
@@ -146,8 +141,7 @@ MenuInit()
     }
 }
 
-submenu(input, title)
-{
+submenu(input, title){
     if (verificationToNum(self.status) >= verificationToNum(self.menu.status[input]))
     {
         self.menu.options destroy();
@@ -167,7 +161,7 @@ submenu(input, title)
             self thread StoreText(input, title);
             self updateScrollbar();
         }
-            
+        
         self.CurMenu = input;
         
         self.menu.title destroy();
@@ -178,23 +172,20 @@ submenu(input, title)
         self.menu.scrollerpos[self.CurMenu] = self.menu.curs[self.CurMenu];
         self.menu.curs[input] = self.menu.scrollerpos[input];
         self updateScrollbar();
-
         if (!self.menu.closeondeath)
         {
            self updateScrollbar();
         }
-    } 
+    }
 }
 
-add_menu_alt(Menu, prevmenu)
-{
+add_menu_alt(Menu, prevmenu){
     self.menu.getmenu[Menu] = Menu;
     self.menu.menucount[Menu] = 0;
     self.menu.previousmenu[Menu] = prevmenu;
 }
 
-add_menu(Menu, prevmenu, status)
-{
+add_menu(Menu, prevmenu, status){
     self.menu.status[Menu] = status;
     self.menu.getmenu[Menu] = Menu;
     self.menu.scrollerpos[Menu] = 0;
@@ -203,8 +194,7 @@ add_menu(Menu, prevmenu, status)
     self.menu.previousmenu[Menu] = prevmenu;
 }
 
-add_option(Menu, Text, Func, arg1, arg2)
-{
+add_option(Menu, Text, Func, arg1, arg2){
     Menu = self.menu.getmenu[Menu];
     Num = self.menu.menucount[Menu];
     self.menu.menuopt[Menu][Num] = Text;
@@ -214,74 +204,63 @@ add_option(Menu, Text, Func, arg1, arg2)
     self.menu.menucount[Menu] += 1;
 }
 
-
-elemMoveY(time, input)
-{
+elemMoveY(time, input){
     self moveOverTime(time);
     self.y = 69 + input;
 }
 
-
-updateScrollbar()
-{
+updateScrollbar(){
     self.menu.scroller fadeOverTime(0.3);
     self.menu.scroller.alpha = 1;
     self.menu.scroller.color = (0.96, 0.04, 0.13);
     self.menu.scroller moveOverTime(0.15);
-    self.menu.scroller.y = 49 + (self.menu.curs[self.menu.currentmenu] * 20.36); 
+    self.menu.scroller.y = 49 + (self.menu.curs[self.menu.currentmenu] * 20.36);
 }
 
-openMenu()
-{
+openMenu(){
     self freezeControls(false);
     self StoreText("Main Menu", "Main Menu");
     self.menu.title destroy();
-    self.menu.title = drawText("Andrews Utility", "objective", 2, 300, 10, (1,1,1),0,(0.96, 0.04, 0.13), 1, 3); 
+    self.menu.title = drawText("Andrews Utility", "objective", 2, 300, 10, (1,1,1),0,(0.96, 0.04, 0.13), 1, 3);
     self.menu.title FadeOverTime(0.3);
     self.menu.title.alpha = 1;
     
     self.menu.background FadeOverTime(0.3);
     self.menu.background.alpha = .75;
-
     self updateScrollbar();
     self.menu.open = true;
 }
 
-closeMenu()
-{
+closeMenu(){
     self.menu.title destroy();
     self.menu.options FadeOverTime(0.3);
     self.menu.options.alpha = 0;
     self.menu.background FadeOverTime(0.3);
     self.menu.background.alpha = 0;
-
     self.menu.title FadeOverTime(0.3);
     self.menu.title.alpha = 0;
-
     self.menu.scroller FadeOverTime(0.3);
-    self.menu.scroller.alpha = 0;    
+    self.menu.scroller.alpha = 0;
+    
     self.menu.open = false;
 }
 
-destroyMenu(player)
-{
+destroyMenu(player){
     player.MenuInit = false;
     closeMenu();
     wait 0.3;
-
-    player.menu.options destroy();  
+    player.menu.options destroy();
     player.menu.background destroy();
     player.menu.scroller destroy();
     player.menu.title destroy();
     player notify("destroyMenu");
 }
 
-closeMenuOnDeath()
-{   
+closeMenuOnDeath(){
     self endon("disconnect");
     self endon( "destroyMenu" );
     level endon("game_ended");
-    for(;;) 
+    for(;;)
     {
         self waittill("death");
         self.menu.closeondeath = true;
@@ -292,32 +271,28 @@ closeMenuOnDeath()
     }
 }
 
-StoreShaders() 
-{
-    self.menu.background = self drawShader("white", 10, -5, 200, 300, (0, 0, 0), 0, 0); 
-    self.menu.scroller = self drawShader("white", 10, -500, 200, 17, (0, 0, 0), 255, 1);    
+StoreShaders() {
+    self.menu.background = self drawShader("white", 10, -5, 200, 300, (0, 0, 0), 0, 0);
+    self.menu.scroller = self drawShader("white", 10, -500, 200, 17, (0, 0, 0), 255, 1);
 }
 
-StoreText(menu, title)
-{
+StoreText(menu, title){
     self.menu.currentmenu = menu;
     self.menu.title destroy();
     string = "";
-    self.menu.title = drawText(title, "objective", 2, 0, 300, (1, 1, 1), 0, 1, 5);   
+    self.menu.title = drawText(title, "objective", 2, 0, 300, (1, 1, 1), 0, 1, 5);
     self.menu.title FadeOverTime(0.3);
     self.menu.title.alpha = 1;
     
     for(i = 0; i < self.menu.menuopt[menu].size; i++)
     { string += self.menu.menuopt[menu][i]+ "\n"; }
-
-    self.menu.options destroy(); 
+    self.menu.options destroy();
     self.menu.options = drawText(string, "objective", 1.7, 300, 48, (1, 1, 1), 0, (0, 0, 0), 0, 4);
     self.menu.options FadeOverTime(0.3);
     self.menu.options.alpha = 1;
 }
 
-getPlayerName(player)
-{
+getPlayerName(player){
     playerName = getSubStr(player.name, 0, player.name.size);
     for(i=0; i < playerName.size; i++)
     {
@@ -329,8 +304,7 @@ getPlayerName(player)
     return playerName;
 }
 
-drawText(text, font, fontScale, x, y, color, alpha, glowColor, glowAlpha, sort)
-{
+drawText(text, font, fontScale, x, y, color, alpha, glowColor, glowAlpha, sort){
     hud = self createFontString(font, fontScale);
     hud setText(text);
     hud.x = x;
@@ -344,8 +318,7 @@ drawText(text, font, fontScale, x, y, color, alpha, glowColor, glowAlpha, sort)
     return hud;
 }
 
-createFontString(font, fontScale)
-{
+createFontString(font, fontScale){
     hud = newClientHudElem(self);
     hud.elemType = "font";
     hud.font = font;
@@ -359,8 +332,7 @@ createFontString(font, fontScale)
     return hud;
 }
 
-createText(font, fontScale, alignX, alignY, x, y, text)
-{
+createText(font, fontScale, alignX, alignY, x, y, text){
     hud = newClientHudElem(self);
     hud.elemType = "text";
     hud.font = font;
@@ -374,10 +346,7 @@ createText(font, fontScale, alignX, alignY, x, y, text)
     return hud;
 }
 
-
-
-drawShader(shader, x, y, width, height, color, alpha, sort)
-{
+drawShader(shader, x, y, width, height, color, alpha, sort){
     hud = newClientHudElem(self);
     hud.elemtype = "icon";
     hud.color = color;
@@ -391,44 +360,39 @@ drawShader(shader, x, y, width, height, color, alpha, sort)
     return hud;
 }
 
-verificationToNum(status)
-{
+verificationToNum(status){
     if (status == "Host")
         return 2;
     if (status == "User")
         return 1;
     else
         return 0;
-} 
+}
 
-Iif(bool, rTrue, rFalse)
-{
+Iif(bool, rTrue, rFalse){
     if(bool)
         return rTrue;
     else
         return rFalse;
-} 
+}
 
-booleanReturnVal(bool, returnIfFalse, returnIfTrue) 
-{
+booleanReturnVal(bool, returnIfFalse, returnIfTrue) {
     if (bool)
         return returnIfTrue;
     else
         return returnIfFalse;
 }
 
-booleanOpposite(bool)
-{
+booleanOpposite(bool){
     if(!isDefined(bool))
         return true;
     if (bool)
         return false;
     else
         return true;
-} 
+}
 
-bankDeposit()
-{
+bankDeposit(){
     if(self.score >= 1000)
     {
         self.account_value += 1;
@@ -440,8 +404,7 @@ bankDeposit()
         self iPrintLnBold("Need ^1$1,000 ^7to deposit!");
 }
 
-bankWithdraw()
-{
+bankWithdraw(){
     if(self.account_value >= 1)
     {
         self.account_value -= 1;
@@ -453,8 +416,7 @@ bankWithdraw()
         self iPrintLnBold("^1Insufficient ^7funds!");
 }
 
-checkBalance()
-{
+checkBalance(){
     if(!isDefined(self.account_value))
         self.account_value = self get_player_bank_account();
         
@@ -464,8 +426,7 @@ checkBalance()
     self.balanceHud = self createText("objective", 1.2, "LEFT", "TOP", 10, 50, "Bank Balance: $" + (self.account_value * 1000));
 }
 
-toggle_zombie_counter()
-{
+toggle_zombie_counter(){
     if(!isDefined(self.zombieCounterActive))
         self.zombieCounterActive = false;
         
@@ -485,8 +446,7 @@ toggle_zombie_counter()
     }
 }
 
-zombie_counter()
-{
+zombie_counter(){
     self endon("disconnect");
     self endon("stop_zombie_counter");
     level endon("game_ended");
@@ -504,11 +464,9 @@ zombie_counter()
     }
 }
 
-toggleAfk()
-{
+toggleAfk(){
     if(!isDefined(self.isAfk))
         self.isAfk = false;
-
     if(!self.isAfk)
     {
         self.isAfk = true;
@@ -528,8 +486,7 @@ toggleAfk()
     }
 }
 
-safelyDisableAfk()
-{
+safelyDisableAfk(){
     self allowSpectateTeam("allies", false);
     self allowSpectateTeam("axis", false);
     self setMoveSpeedScale(1);
@@ -539,8 +496,7 @@ safelyDisableAfk()
     self disableInvulnerability();
 }
 
-toggle_fov()
-{
+toggle_fov(){
     if(!isDefined(self.currentFov))
         self.currentFov = 1;
     
@@ -552,8 +508,7 @@ toggle_fov()
     self iPrintLn("FOV Scale set to: ^2" + self.currentFov);
 }
 
-moneyMultiplier()
-{
+moneyMultiplier(){
     self endon("death");
     self endon("disconnect");
     multiplier = 1.03;
@@ -565,7 +520,7 @@ moneyMultiplier()
         
         if(newScore > oldScore)
         {
-             pointsEarned = newScore - oldScore;
+            pointsEarned = newScore - oldScore;
             bonusPoints = int(pointsEarned * (multiplier - 1));
             
             if(bonusPoints > 0)
@@ -576,14 +531,12 @@ moneyMultiplier()
     }
 }
 
-set_increased_health()
-{
+set_increased_health(){
     self.maxhealth = 200;
     self.health = self.maxhealth;
 }
 
-get_player_bank_account()
-{
+get_player_bank_account(){
     if(!isDefined(self.account_value))
     {
         self.account_value = self maps\mp\zombies\_zm_stats::get_map_stat("depositBox", level.banking_map);
@@ -591,8 +544,7 @@ get_player_bank_account()
     return self.account_value;
 }
 
-init_player_hud()
-{
+init_player_hud(){
     self endon("disconnect");
     
     self.healthHud = self createText("objective", 1.2, "LEFT", "TOP", 10, 10, "Health: 100");
@@ -604,8 +556,7 @@ init_player_hud()
     }
 }
 
-auto_deposit_on_end_game()
-{
+auto_deposit_on_end_game(){
     level waittill("end_game");
     foreach(player in level.players)
     {
@@ -616,8 +567,130 @@ auto_deposit_on_end_game()
     }
 }
 
-get_current_zombie_count()
-{
+get_current_zombie_count(){
     zombies = getaiarray("axis");
     return zombies.size;
 }
+
+toggleZombieESP(){
+    self endon("disconnect");
+    
+    if(!isDefined(self.zombieESP))
+        self.zombieESP = false;
+    
+    if(!self.zombieESP)
+    {
+        self thread enableZombieESP();
+        self iPrintLn("Zombie ESP: ^2ON");
+        self.zombieESP = true;
+    }
+    else
+    {
+        self thread disableZombieESP();
+        self iPrintLn("Zombie ESP: ^1OFF");
+        self.zombieESP = false;
+    }
+}
+
+enableZombieESP(){
+    self thread getZombieTargets();
+}
+
+disableZombieESP(){
+    self notify("esp_end");
+    if(isDefined(self.esp) && isDefined(self.esp.targets))
+    {
+        for(i = 0; i < self.esp.targets.size; i++)
+        {
+            if(isDefined(self.esp.targets[i].bottomline))
+                self.esp.targets[i].bottomline destroy();
+        }
+    }
+}
+
+getZombieTargets(){
+    self endon("disconnect");
+    self endon("esp_end");
+    level endon("game_ended");
+    
+    for(;;)
+    {
+        // Clean up old targets first
+        if(isDefined(self.esp) && isDefined(self.esp.targets))
+        {
+            for(i = 0; i < self.esp.targets.size; i++)
+            {
+                if(isDefined(self.esp.targets[i].bottomline))
+                    self.esp.targets[i].bottomline destroy();
+            }
+        }
+        
+        self.esp = spawnStruct();
+        self.esp.targets = [];
+        
+        zombies = getaiarray("axis");
+        
+        for(i = 0; i < zombies.size; i++)
+        {
+            if(isDefined(zombies[i]) && isAlive(zombies[i]))
+            {
+                self.esp.targets[i] = spawnStruct();
+                self.esp.targets[i].zombie = zombies[i];
+                self thread monitorZombieTarget(self.esp.targets[i]);
+            }
+        }
+        
+        wait 2.0;
+    }
+}
+
+monitorZombieTarget(target){
+    self endon("disconnect");
+    self endon("esp_end");
+    self endon("UpdateZombieESP");
+    level endon("game_ended");
+    
+    target.bottomline = self createZombieBottomLine();
+    
+    while(isDefined(target.zombie) && isAlive(target.zombie))
+    {
+        zombie_pos = target.zombie.origin;
+        zombie_head = target.zombie getTagOrigin("j_head");
+        
+        // Position bottom line
+        target.bottomline.x = zombie_pos[0];
+        target.bottomline.y = zombie_pos[1];
+        target.bottomline.z = zombie_pos[2] + 35;
+        
+        // Check visibility and set colors
+        outline_color = (1, 0, 0); // Red for visible
+        if(!bulletTracePassed(self getTagOrigin("j_head"), zombie_head, false, self))
+        {
+            outline_color = (0, 1, 0); // Green for not visible
+        }
+        
+        target.bottomline.color = outline_color;
+        
+        wait 0.05;
+    }
+    
+    // Cleanup
+    if(isDefined(target.bottomline))
+        target.bottomline destroy();
+}
+createZombieBottomLine(){
+    bottomline = newClientHudElem(self);
+    bottomline.elemtype = "icon";
+    bottomline.sort = 1;
+    bottomline.archived = false;
+    bottomline.alpha = 0.8;
+    bottomline.color = (1, 0, 0);
+    bottomline setShader("white", 20, 1); // Horizontal line
+    bottomline setWaypoint(true, true);
+    return bottomline;
+}
+
+
+
+
+
