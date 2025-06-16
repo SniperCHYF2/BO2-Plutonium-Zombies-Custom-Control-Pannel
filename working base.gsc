@@ -53,7 +53,8 @@ CreateMenu(){
     self add_option("Main Menu", "Perk Shop", ::submenu, "PerkMenu", "Perk Shop");
     self add_option("Main Menu", "Weapon Options", ::submenu, "WeaponMenu", "Weapon Options");
     self add_option("Main Menu", "Players", ::submenu, "PlayersMenu", "Players");
-        
+    self add_option("Main Menu", "No Lava Damage", ::toggleNoLavaDamage); 
+	  
     //Banking Menu
     self add_menu("BankMenu", "Main Menu", "User");
     self add_option("BankMenu", "Deposit $1000", ::bankDeposit);
@@ -80,8 +81,8 @@ CreateMenu(){
     
     //Weapon Menu
     self add_menu("WeaponMenu", "Main Menu", "User");
-    self add_option("WeaponMenu", "Pack-a-Punch Current Weapon", ::packAPunchWeapon);
-    self add_option("WeaponMenu", "Max Ammo Current Weapon", ::maxAmmoWeapon);
+    self add_option("WeaponMenu", "Pack-a-Punch ($5000)", ::packAPunchWeapon);
+    self add_option("WeaponMenu", "Max Ammo ($4500)", ::maxAmmoWeapon);
         
     //Players Menu
     self add_menu("PlayersMenu", "Main Menu", "Host");
@@ -443,6 +444,50 @@ checkBalance(){
             
     self.balanceHud = self createText("objective", 1.2, "LEFT", "TOP", 10, 50, "Bank Balance: $" + (self.account_value * 1000));
 }
+	toggleNoLavaDamage(){
+    if(!isDefined(self.noLavaDamage))
+        self.noLavaDamage = false;
+        
+    self.noLavaDamage = !self.noLavaDamage;
+    
+    if(self.noLavaDamage)
+    {
+        self thread monitorHealthForLava();
+        self iPrintLn("No Lava Damage: ^2ON");
+    }
+    else
+    {
+        self notify("stop_lava_protection");
+        self iPrintLn("No Lava Damage: ^1OFF");
+    }
+}
+
+monitorHealthForLava(){
+    self endon("disconnect");
+    self endon("stop_lava_protection");
+    self endon("death");
+    level endon("game_ended");
+    
+    while(self.noLavaDamage)
+    {
+        previous_health = self.health;
+        wait 0.05;
+        
+        // If health dropped rapidly (likely environmental damage)
+        if(self.health < previous_health)
+        {
+            damage_taken = previous_health - self.health;
+            
+            // If it's a small amount of damage (typical lava/fire damage)
+            if(damage_taken <= 50 && damage_taken > 0)
+            {
+                // Restore the health
+                self.health = previous_health;
+            }
+        }
+    }
+}
+
 
 buyPerk(perk_name){
     perk_costs = [];
