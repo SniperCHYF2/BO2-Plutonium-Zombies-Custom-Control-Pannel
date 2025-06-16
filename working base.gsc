@@ -18,7 +18,7 @@ onPlayerConnect(){
             player.status = "Host";
         else
             player.status = "User";
-            
+                    
         player thread onPlayerSpawned();
     }
 }
@@ -26,7 +26,7 @@ onPlayerConnect(){
 onPlayerSpawned(){
     self endon("disconnect");
     level endon("game_ended");
-    
+        
     self.MenuInit = false;
     for(;;)
     {
@@ -50,14 +50,16 @@ CreateMenu(){
     self add_menu("Main Menu", undefined, "User");
     self add_option("Main Menu", "Banking Options", ::submenu, "BankMenu", "Banking Menu");
     self add_option("Main Menu", "Player Options", ::submenu, "PlayerMenu", "Player Menu");
+    self add_option("Main Menu", "Perk Shop", ::submenu, "PerkMenu", "Perk Shop");
+    self add_option("Main Menu", "Weapon Options", ::submenu, "WeaponMenu", "Weapon Options");
     self add_option("Main Menu", "Players", ::submenu, "PlayersMenu", "Players");
-    
+        
     //Banking Menu
     self add_menu("BankMenu", "Main Menu", "User");
     self add_option("BankMenu", "Deposit $1000", ::bankDeposit);
     self add_option("BankMenu", "Withdraw $1000", ::bankWithdraw);
     self add_option("BankMenu", "Check Balance", ::checkBalance);
-    
+        
     //Player Menu
     self add_menu("PlayerMenu", "Main Menu", "User");
     self add_option("PlayerMenu", "Toggle AFK Mode", ::toggleAfk);
@@ -65,6 +67,22 @@ CreateMenu(){
     self add_option("PlayerMenu", "Toggle Zombie Counter", ::toggle_zombie_counter);
     self add_option("PlayerMenu", "Toggle Zombie ESP", ::toggleZombieESP);
     
+    //Perk Menu
+    self add_menu("PerkMenu", "Main Menu", "User");
+    self add_option("PerkMenu", "Juggernog ($2500)", ::buyPerk, "specialty_armorvest");
+    self add_option("PerkMenu", "Speed Cola ($3000)", ::buyPerk, "specialty_fastreload");
+    self add_option("PerkMenu", "Double Tap ($2000)", ::buyPerk, "specialty_rof");
+    self add_option("PerkMenu", "Quick Revive ($1500)", ::buyPerk, "specialty_quickrevive");
+    self add_option("PerkMenu", "Stamin-Up ($2000)", ::buyPerk, "specialty_longersprint");
+    self add_option("PerkMenu", "PhD Flopper ($2000)", ::buyPerk, "specialty_flakjacket");
+    self add_option("PerkMenu", "Deadshot ($1500)", ::buyPerk, "specialty_deadshot");
+    self add_option("PerkMenu", "Mule Kick ($4000)", ::buyPerk, "specialty_additionalprimaryweapon");
+    
+    //Weapon Menu
+    self add_menu("WeaponMenu", "Main Menu", "User");
+    self add_option("WeaponMenu", "Pack-a-Punch Current Weapon", ::packAPunchWeapon);
+    self add_option("WeaponMenu", "Max Ammo Current Weapon", ::maxAmmoWeapon);
+        
     //Players Menu
     self add_menu("PlayersMenu", "Main Menu", "Host");
     for(i = 0; i < 12; i++)
@@ -79,16 +97,16 @@ updatePlayersMenu(){
     {
         player = level.players[i];
         playerName = getPlayerName(player);
-        
+                
         playersizefixed = level.players.size - 1;
         if(self.menu.curs["PlayersMenu"] > playersizefixed)
         {
             self.menu.scrollerpos["PlayersMenu"] = playersizefixed;
             self.menu.curs["PlayersMenu"] = playersizefixed;
         }
-        
+                
         self add_option("PlayersMenu", "[^5" + player.status + "^7] " + playerName, ::submenu, "pOpt " + i, "[^5" + player.status + "^7] " + playerName);
-        
+                
         self add_menu_alt("pOpt " + i, "PlayersMenu");
         self add_option("pOpt " + i, "ToBeUpdated", player);
     }
@@ -98,7 +116,7 @@ MenuInit(){
     self endon("disconnect");
     self endon( "destroyMenu" );
     level endon("game_ended");
-    
+        
     self.menu = spawnstruct();
     self.toggles = spawnstruct();
     self.menu.open = false;
@@ -128,7 +146,7 @@ MenuInit(){
             {
                 self.menu.curs[self.menu.currentmenu] += (Iif(self actionSlotTwoButtonPressed(), 1, -1));
                 self.menu.curs[self.menu.currentmenu] = (Iif(self.menu.curs[self.menu.currentmenu] < 0, self.menu.menuopt[self.menu.currentmenu].size-1, Iif(self.menu.curs[self.menu.currentmenu] > self.menu.menuopt[self.menu.currentmenu].size-1, 0, self.menu.curs[self.menu.currentmenu])));
-                
+                                
                 self updateScrollbar();
             }
             if(self jumpButtonPressed())
@@ -161,14 +179,14 @@ submenu(input, title){
             self thread StoreText(input, title);
             self updateScrollbar();
         }
-        
+                
         self.CurMenu = input;
-        
+                
         self.menu.title destroy();
         self.menu.title = drawText(title, "objective", 2, 300, 10, (1,1,1), 0, (0.96, 0.04, 0.13), 1, 3);
         self.menu.title FadeOverTime(0.3);
         self.menu.title.alpha = 1;
-        
+                
         self.menu.scrollerpos[self.CurMenu] = self.menu.curs[self.CurMenu];
         self.menu.curs[input] = self.menu.scrollerpos[input];
         self updateScrollbar();
@@ -224,7 +242,7 @@ openMenu(){
     self.menu.title = drawText("Andrews Utility", "objective", 2, 300, 10, (1,1,1),0,(0.96, 0.04, 0.13), 1, 3);
     self.menu.title FadeOverTime(0.3);
     self.menu.title.alpha = 1;
-    
+        
     self.menu.background FadeOverTime(0.3);
     self.menu.background.alpha = .75;
     self updateScrollbar();
@@ -241,7 +259,7 @@ closeMenu(){
     self.menu.title.alpha = 0;
     self.menu.scroller FadeOverTime(0.3);
     self.menu.scroller.alpha = 0;
-    
+        
     self.menu.open = false;
 }
 
@@ -283,7 +301,7 @@ StoreText(menu, title){
     self.menu.title = drawText(title, "objective", 2, 0, 300, (1, 1, 1), 0, 1, 5);
     self.menu.title FadeOverTime(0.3);
     self.menu.title.alpha = 1;
-    
+        
     for(i = 0; i < self.menu.menuopt[menu].size; i++)
     { string += self.menu.menuopt[menu][i]+ "\n"; }
     self.menu.options destroy();
@@ -419,19 +437,106 @@ bankWithdraw(){
 checkBalance(){
     if(!isDefined(self.account_value))
         self.account_value = self get_player_bank_account();
-        
+            
     if(isDefined(self.balanceHud))
         self.balanceHud destroy();
-        
+            
     self.balanceHud = self createText("objective", 1.2, "LEFT", "TOP", 10, 50, "Bank Balance: $" + (self.account_value * 1000));
+}
+
+buyPerk(perk_name){
+    perk_costs = [];
+    perk_costs["specialty_armorvest"] = 2500;        // Juggernog
+    perk_costs["specialty_fastreload"] = 3000;       // Speed Cola
+    perk_costs["specialty_rof"] = 2000;              // Double Tap
+    perk_costs["specialty_quickrevive"] = 1500;      // Quick Revive
+    perk_costs["specialty_longersprint"] = 2000;     // Stamin-Up
+    perk_costs["specialty_flakjacket"] = 2000;       // PhD Flopper
+    perk_costs["specialty_deadshot"] = 1500;         // Deadshot
+    perk_costs["specialty_additionalprimaryweapon"] = 4000; // Mule Kick
+    
+    cost = perk_costs[perk_name];
+    
+    if(self hasPerk(perk_name))
+    {
+        self iPrintLnBold("^1You already have this perk!");
+        return;
+    }
+    
+    if(self.score >= cost)
+    {
+        self.score -= cost;
+        self maps\mp\zombies\_zm_perks::give_perk(perk_name);
+        self iPrintLnBold("^2Purchased perk for $" + cost);
+    }
+    else
+    {
+        self iPrintLnBold("^1Need $" + cost + " to buy this perk!");
+    }
+}
+
+packAPunchWeapon(){
+    current_weapon = self getCurrentWeapon();
+    
+    if(current_weapon == "none" || current_weapon == "")
+    {
+        self iPrintLnBold("^1No weapon to Pack-a-Punch!");
+        return;
+    }
+    
+    if(self.score >= 5000)
+    {
+        self.score -= 5000;
+        
+        // Get Pack-a-Punch version of weapon
+        pap_weapon = maps\mp\zombies\_zm_weapons::get_upgrade_weapon(current_weapon, false);
+        
+        if(isDefined(pap_weapon))
+        {
+            self takeWeapon(current_weapon);
+            self giveWeapon(pap_weapon);
+            self switchToWeapon(pap_weapon);
+            self iPrintLnBold("^2Weapon Pack-a-Punched for $5000!");
+        }
+        else
+        {
+            self.score += 5000; // Refund if weapon can't be upgraded
+            self iPrintLnBold("^1This weapon cannot be Pack-a-Punched!");
+        }
+    }
+    else
+    {
+        self iPrintLnBold("^1Need $5000 to Pack-a-Punch!");
+    }
+}
+
+maxAmmoWeapon(){
+    current_weapon = self getCurrentWeapon();
+    
+    if(current_weapon == "none" || current_weapon == "")
+    {
+        self iPrintLnBold("^1No weapon selected!");
+        return;
+    }
+    
+    if(self.score >= 4500)
+    {
+        self.score -= 4500;
+        self giveMaxAmmo(current_weapon);
+        self iPrintLnBold("^2Max ammo given for $4500!");
+    }
+    else
+    {
+        self iPrintLnBold("^1Need $4500 for max ammo!");
+    }
 }
 
 toggle_zombie_counter(){
     if(!isDefined(self.zombieCounterActive))
         self.zombieCounterActive = false;
-        
+            
     self.zombieCounterActive = !self.zombieCounterActive;
-    
+        
     if(self.zombieCounterActive)
     {
         self thread zombie_counter();
@@ -450,12 +555,12 @@ zombie_counter(){
     self endon("disconnect");
     self endon("stop_zombie_counter");
     level endon("game_ended");
-    
+        
     if(isDefined(self.zombiecounter))
         self.zombiecounter destroy();
-    
+        
     self.zombiecounter = self createText("objective", 1.2, "LEFT", "TOP", 10, 30, "Zombies: 0");
-    
+        
     while(self.zombieCounterActive)
     {
         count = level.zombie_total + get_current_zombie_count();
@@ -499,11 +604,11 @@ safelyDisableAfk(){
 toggle_fov(){
     if(!isDefined(self.currentFov))
         self.currentFov = 1;
-    
+        
     self.currentFov += 0.1;
     if(self.currentFov > 1.5)
         self.currentFov = 1;
-        
+            
     setDvar("cg_fovScale", self.currentFov);
     self iPrintLn("FOV Scale set to: ^2" + self.currentFov);
 }
@@ -517,12 +622,12 @@ moneyMultiplier(){
         oldScore = self.score;
         wait 0.05;
         newScore = self.score;
-        
+                
         if(newScore > oldScore)
         {
             pointsEarned = newScore - oldScore;
             bonusPoints = int(pointsEarned * (multiplier - 1));
-            
+                        
             if(bonusPoints > 0)
             {
                 self.score += bonusPoints;
@@ -546,9 +651,9 @@ get_player_bank_account(){
 
 init_player_hud(){
     self endon("disconnect");
-    
+        
     self.healthHud = self createText("objective", 1.2, "LEFT", "TOP", 10, 10, "Health: 100");
-    
+        
     for(;;)
     {
         self.healthHud setText("Health: " + self.health);
@@ -574,10 +679,10 @@ get_current_zombie_count(){
 
 toggleZombieESP(){
     self endon("disconnect");
-    
+        
     if(!isDefined(self.zombieESP))
         self.zombieESP = false;
-    
+        
     if(!self.zombieESP)
     {
         self thread enableZombieESP();
@@ -612,7 +717,7 @@ getZombieTargets(){
     self endon("disconnect");
     self endon("esp_end");
     level endon("game_ended");
-    
+        
     for(;;)
     {
         // Clean up old targets first
@@ -624,12 +729,12 @@ getZombieTargets(){
                     self.esp.targets[i].bottomline destroy();
             }
         }
-        
+                
         self.esp = spawnStruct();
         self.esp.targets = [];
-        
+                
         zombies = getaiarray("axis");
-        
+                
         for(i = 0; i < zombies.size; i++)
         {
             if(isDefined(zombies[i]) && isAlive(zombies[i]))
@@ -639,7 +744,7 @@ getZombieTargets(){
                 self thread monitorZombieTarget(self.esp.targets[i]);
             }
         }
-        
+                
         wait 2.0;
     }
 }
@@ -649,35 +754,36 @@ monitorZombieTarget(target){
     self endon("esp_end");
     self endon("UpdateZombieESP");
     level endon("game_ended");
-    
+        
     target.bottomline = self createZombieBottomLine();
-    
+        
     while(isDefined(target.zombie) && isAlive(target.zombie))
     {
         zombie_pos = target.zombie.origin;
         zombie_head = target.zombie getTagOrigin("j_head");
-        
+                
         // Position bottom line
         target.bottomline.x = zombie_pos[0];
         target.bottomline.y = zombie_pos[1];
         target.bottomline.z = zombie_pos[2] + 35;
-        
+                
         // Check visibility and set colors
         outline_color = (1, 0, 0); // Red for visible
         if(!bulletTracePassed(self getTagOrigin("j_head"), zombie_head, false, self))
         {
             outline_color = (0, 1, 0); // Green for not visible
         }
-        
+                
         target.bottomline.color = outline_color;
-        
+                
         wait 0.05;
     }
-    
+        
     // Cleanup
     if(isDefined(target.bottomline))
         target.bottomline destroy();
 }
+
 createZombieBottomLine(){
     bottomline = newClientHudElem(self);
     bottomline.elemtype = "icon";
@@ -689,8 +795,5 @@ createZombieBottomLine(){
     bottomline setWaypoint(true, true);
     return bottomline;
 }
-
-
-
 
 
