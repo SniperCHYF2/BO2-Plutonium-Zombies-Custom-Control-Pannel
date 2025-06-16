@@ -26,7 +26,7 @@ onPlayerConnect(){
 onPlayerSpawned(){
     self endon("disconnect");
     level endon("game_ended");
-        
+            
     self.MenuInit = false;
     for(;;)
     {
@@ -34,6 +34,11 @@ onPlayerSpawned(){
         if (!self.MenuInit)
         {
             self.MenuInit = true;
+            
+            // Initialize default menu colors
+            self.menuColor = (0.96, 0.04, 0.13);
+            self.menuGlowColor = (1, 0.2, 0.3);
+            
             self thread MenuInit();
             self thread closeMenuOnDeath();
             self iPrintLn("^6Aim & Knife To Open Menu");
@@ -53,21 +58,22 @@ CreateMenu(){
     self add_option("Main Menu", "Perk Shop", ::submenu, "PerkMenu", "Perk Shop");
     self add_option("Main Menu", "Weapon Options", ::submenu, "WeaponMenu", "Weapon Options");
     self add_option("Main Menu", "Players", ::submenu, "PlayersMenu", "Players");
-    self add_option("Main Menu", "No Lava Damage", ::toggleNoLavaDamage); 
-	  
+    self add_option("Main Menu", "Menu Colors", ::submenu, "ColorMenu", "Menu Colors");
+    self add_option("Main Menu", "No Lava Damage", ::toggleNoLavaDamage);
+
     //Banking Menu
     self add_menu("BankMenu", "Main Menu", "User");
     self add_option("BankMenu", "Deposit $1000", ::bankDeposit);
     self add_option("BankMenu", "Withdraw $1000", ::bankWithdraw);
     self add_option("BankMenu", "Check Balance", ::checkBalance);
-        
+            
     //Player Menu
     self add_menu("PlayerMenu", "Main Menu", "User");
     self add_option("PlayerMenu", "Toggle AFK Mode", ::toggleAfk);
     self add_option("PlayerMenu", "FOV Slider", ::toggle_fov);
     self add_option("PlayerMenu", "Toggle Zombie Counter", ::toggle_zombie_counter);
     self add_option("PlayerMenu", "Toggle Zombie ESP", ::toggleZombieESP);
-    
+        
     //Perk Menu
     self add_menu("PerkMenu", "Main Menu", "User");
     self add_option("PerkMenu", "Juggernog ($2500)", ::buyPerk, "specialty_armorvest");
@@ -78,12 +84,23 @@ CreateMenu(){
     self add_option("PerkMenu", "PhD Flopper ($2000)", ::buyPerk, "specialty_flakjacket");
     self add_option("PerkMenu", "Deadshot ($1500)", ::buyPerk, "specialty_deadshot");
     self add_option("PerkMenu", "Mule Kick ($4000)", ::buyPerk, "specialty_additionalprimaryweapon");
-    
+        
     //Weapon Menu
     self add_menu("WeaponMenu", "Main Menu", "User");
     self add_option("WeaponMenu", "Pack-a-Punch ($5000)", ::packAPunchWeapon);
     self add_option("WeaponMenu", "Max Ammo ($4500)", ::maxAmmoWeapon);
-        
+
+    //Color Menu
+    self add_menu("ColorMenu", "Main Menu", "User");
+    self add_option("ColorMenu", "Red Theme", ::changeMenuColor, "red");
+    self add_option("ColorMenu", "Blue Theme", ::changeMenuColor, "blue");
+    self add_option("ColorMenu", "Green Theme", ::changeMenuColor, "green");
+    self add_option("ColorMenu", "Purple Theme", ::changeMenuColor, "purple");
+    self add_option("ColorMenu", "Orange Theme", ::changeMenuColor, "orange");
+    self add_option("ColorMenu", "Cyan Theme", ::changeMenuColor, "cyan");
+    self add_option("ColorMenu", "Yellow Theme", ::changeMenuColor, "yellow");
+    self add_option("ColorMenu", "White Theme", ::changeMenuColor, "white");
+            
     //Players Menu
     self add_menu("PlayersMenu", "Main Menu", "Host");
     for(i = 0; i < 12; i++)
@@ -91,6 +108,7 @@ CreateMenu(){
         self add_menu("pOpt " + i, "PlayersMenu", "Host");
     }
 }
+
 
 updatePlayersMenu(){
     self.menu.menucount["PlayersMenu"] = 0;
@@ -175,19 +193,18 @@ submenu(input, title){
             self thread StoreText(input, "Players");
             self updateScrollbar();
         }
+        else if (input == "ColorMenu")
+        {
+            self thread StoreText(input, "Menu Colors");
+            self updateScrollbar();
+        }
         else
         {
             self thread StoreText(input, title);
             self updateScrollbar();
         }
-                
+                                
         self.CurMenu = input;
-                
-        self.menu.title destroy();
-        self.menu.title = drawText(title, "objective", 2, 300, 10, (1,1,1), 0, (0.96, 0.04, 0.13), 1, 3);
-        self.menu.title FadeOverTime(0.3);
-        self.menu.title.alpha = 1;
-                
         self.menu.scrollerpos[self.CurMenu] = self.menu.curs[self.CurMenu];
         self.menu.curs[input] = self.menu.scrollerpos[input];
         self updateScrollbar();
@@ -197,6 +214,8 @@ submenu(input, title){
         }
     }
 }
+
+
 
 add_menu_alt(Menu, prevmenu){
     self.menu.getmenu[Menu] = Menu;
@@ -230,50 +249,176 @@ elemMoveY(time, input){
 
 updateScrollbar(){
     self.menu.scroller fadeOverTime(0.3);
-    self.menu.scroller.alpha = 1;
-    self.menu.scroller.color = (0.96, 0.04, 0.13);
+    self.menu.scroller.alpha = 0.8;
+    self.menu.scroller.color = self.menuColor; // Use dynamic color instead of hardcoded
     self.menu.scroller moveOverTime(0.15);
-    self.menu.scroller.y = 49 + (self.menu.curs[self.menu.currentmenu] * 20.36);
+    // Keep scrollbar centered at X = 0, match options Y position (75)
+    self.menu.scroller.x = 0;
+    self.menu.scroller.y = 75 + (self.menu.curs[self.menu.currentmenu] * 20.36);
+        
+    // Update scroller glow
+    self.menu.scrollerGlow fadeOverTime(0.3);
+    self.menu.scrollerGlow.alpha = 0.3;
+    self.menu.scrollerGlow.color = self.menuGlowColor; // Use dynamic glow color
+    self.menu.scrollerGlow moveOverTime(0.15);
+    self.menu.scrollerGlow.x = 0;
+    self.menu.scrollerGlow.y = 73 + (self.menu.curs[self.menu.currentmenu] * 20.36);
+        
+    // Update scroller borders
+    self.menu.scrollerBorderTop fadeOverTime(0.3);
+    self.menu.scrollerBorderTop.alpha = 0.8;
+    self.menu.scrollerBorderTop moveOverTime(0.15);
+    self.menu.scrollerBorderTop.x = 0;
+    self.menu.scrollerBorderTop.y = 75 + (self.menu.curs[self.menu.currentmenu] * 20.36);
+        
+    self.menu.scrollerBorderBottom fadeOverTime(0.3);
+    self.menu.scrollerBorderBottom.alpha = 0.8;
+    self.menu.scrollerBorderBottom moveOverTime(0.15);
+    self.menu.scrollerBorderBottom.x = 0;
+    self.menu.scrollerBorderBottom.y = 92 + (self.menu.curs[self.menu.currentmenu] * 20.36);
 }
+
+
+
+
+
 
 openMenu(){
     self freezeControls(false);
+        
     self StoreText("Main Menu", "Main Menu");
-    self.menu.title destroy();
-    self.menu.title = drawText("Andrews Utility", "objective", 2, 300, 10, (1,1,1),0,(0.96, 0.04, 0.13), 1, 3);
+        
+    // Create title with dynamic glow color
+    self.menu.title = drawText("Andrews Utility", "objective", 2, 307, 35, (1,1,1), 0, self.menuColor, 1, 10);
     self.menu.title FadeOverTime(0.3);
     self.menu.title.alpha = 1;
         
     self.menu.background FadeOverTime(0.3);
-    self.menu.background.alpha = .75;
+    self.menu.background.alpha = .85;
+        
+    self.menu.headerBG FadeOverTime(0.3);
+    self.menu.headerBG.alpha = 0.8;
+    self.menu.headerGlow FadeOverTime(0.3);
+    self.menu.headerGlow.alpha = 0.2;
+        
+    self.menu.footerBG FadeOverTime(0.3);
+    self.menu.footerBG.alpha = 0.8;
+    self.menu.footerGlow FadeOverTime(0.3);
+    self.menu.footerGlow.alpha = 0.2;
+        
+    self.menu.leftBorder FadeOverTime(0.3);
+    self.menu.leftBorder.alpha = 0.9;
+    self.menu.leftGlow FadeOverTime(0.3);
+    self.menu.leftGlow.alpha = 0.1;
+        
+    self.menu.rightBorder FadeOverTime(0.3);
+    self.menu.rightBorder.alpha = 0.9;
+    self.menu.rightGlow FadeOverTime(0.3);
+    self.menu.rightGlow.alpha = 0.1;
+        
     self updateScrollbar();
     self.menu.open = true;
 }
 
+
+
 closeMenu(){
-    self.menu.title destroy();
-    self.menu.options FadeOverTime(0.3);
-    self.menu.options.alpha = 0;
-    self.menu.background FadeOverTime(0.3);
-    self.menu.background.alpha = 0;
-    self.menu.title FadeOverTime(0.3);
-    self.menu.title.alpha = 0;
-    self.menu.scroller FadeOverTime(0.3);
-    self.menu.scroller.alpha = 0;
+    // Destroy the title when closing menu
+    if(isDefined(self.menu.title))
+        self.menu.title destroy();
+        
+    // Also destroy the options text instead of just fading it
+    if(isDefined(self.menu.options))
+        self.menu.options destroy();
+    
+    // Fade out all shader elements but DON'T destroy them
+    if(isDefined(self.menu.background))
+    {
+        self.menu.background FadeOverTime(0.3);
+        self.menu.background.alpha = 0;
+    }
+    if(isDefined(self.menu.scroller))
+    {
+        self.menu.scroller FadeOverTime(0.3);
+        self.menu.scroller.alpha = 0;
+    }
+    if(isDefined(self.menu.headerBG))
+    {
+        self.menu.headerBG FadeOverTime(0.3);
+        self.menu.headerBG.alpha = 0;
+        self.menu.headerGlow FadeOverTime(0.3);
+        self.menu.headerGlow.alpha = 0;
+    }
+    if(isDefined(self.menu.footerBG))
+    {
+        self.menu.footerBG FadeOverTime(0.3);
+        self.menu.footerBG.alpha = 0;
+        self.menu.footerGlow FadeOverTime(0.3);
+        self.menu.footerGlow.alpha = 0;
+    }
+    if(isDefined(self.menu.leftBorder))
+    {
+        self.menu.leftBorder FadeOverTime(0.3);
+        self.menu.leftBorder.alpha = 0;
+        self.menu.leftGlow FadeOverTime(0.3);
+        self.menu.leftGlow.alpha = 0;
+    }
+    if(isDefined(self.menu.rightBorder))
+    {
+        self.menu.rightBorder FadeOverTime(0.3);
+        self.menu.rightBorder.alpha = 0;
+        self.menu.rightGlow FadeOverTime(0.3);
+        self.menu.rightGlow.alpha = 0;
+    }
+    if(isDefined(self.menu.scrollerGlow))
+    {
+        self.menu.scrollerGlow FadeOverTime(0.3);
+        self.menu.scrollerGlow.alpha = 0;
+        self.menu.scrollerBorderTop FadeOverTime(0.3);
+        self.menu.scrollerBorderTop.alpha = 0;
+        self.menu.scrollerBorderBottom FadeOverTime(0.3);
+        self.menu.scrollerBorderBottom.alpha = 0;
+    }
+        
+    // Stop the glow animation
+    self notify("stop_glow_animation");
         
     self.menu.open = false;
 }
+
+
+
+
 
 destroyMenu(player){
     player.MenuInit = false;
     closeMenu();
     wait 0.3;
-    player.menu.options destroy();
-    player.menu.background destroy();
-    player.menu.scroller destroy();
-    player.menu.title destroy();
+    
+    // Destroy text elements
+    if(isDefined(player.menu.options)) player.menu.options destroy();
+    if(isDefined(player.menu.title)) player.menu.title destroy();
+    
+    // Destroy all shader elements
+    if(isDefined(player.menu.background)) player.menu.background destroy();
+    if(isDefined(player.menu.scroller)) player.menu.scroller destroy();
+    if(isDefined(player.menu.headerBG)) player.menu.headerBG destroy();
+    if(isDefined(player.menu.headerGlow)) player.menu.headerGlow destroy();
+    if(isDefined(player.menu.footerBG)) player.menu.footerBG destroy();
+    if(isDefined(player.menu.footerGlow)) player.menu.footerGlow destroy();
+    if(isDefined(player.menu.leftBorder)) player.menu.leftBorder destroy();
+    if(isDefined(player.menu.leftGlow)) player.menu.leftGlow destroy();
+    if(isDefined(player.menu.rightBorder)) player.menu.rightBorder destroy();
+    if(isDefined(player.menu.rightGlow)) player.menu.rightGlow destroy();
+    if(isDefined(player.menu.scrollerGlow)) player.menu.scrollerGlow destroy();
+    if(isDefined(player.menu.scrollerBorderTop)) player.menu.scrollerBorderTop destroy();
+    if(isDefined(player.menu.scrollerBorderBottom)) player.menu.scrollerBorderBottom destroy();
+    
+    // Stop any running threads
     player notify("destroyMenu");
+    player notify("stop_glow_animation");
 }
+
 
 closeMenuOnDeath(){
     self endon("disconnect");
@@ -291,25 +436,121 @@ closeMenuOnDeath(){
 }
 
 StoreShaders() {
-    self.menu.background = self drawShader("white", 10, -5, 200, 300, (0, 0, 0), 0, 0);
-    self.menu.scroller = self drawShader("white", 10, -500, 200, 17, (0, 0, 0), 255, 1);
+    // Main background
+    self.menu.background = self drawShader("white", 0, 50, 200, 250, (0, 0, 0), 0, 0);
+    
+    // Header section - use dynamic colors
+    self.menu.headerBG = self drawShader("white", 0, 30, 200, 40, self.menuColor, 0, 2);
+    self.menu.headerGlow = self drawShader("white", 0, 30, 200, 40, self.menuGlowColor, 0, 1);
+    
+    // Footer section - use dynamic colors
+    self.menu.footerBG = self drawShader("white", 0, 280, 200, 40, self.menuColor, 0, 2);
+    self.menu.footerGlow = self drawShader("white", 0, 280, 200, 40, self.menuGlowColor, 0, 1);
+    
+    // Side borders - use dynamic colors
+    self.menu.leftBorder = self drawShader("white", -100, 30, 8, 290, self.menuColor, 0, 2);
+    self.menu.leftGlow = self drawShader("white", -100, 30, 12, 290, self.menuGlowColor, 0, 1);
+    
+    self.menu.rightBorder = self drawShader("white", 100, 30, 8, 290, self.menuColor, 0, 2);
+    self.menu.rightGlow = self drawShader("white", 100, 30, 12, 290, self.menuGlowColor, 0, 1);
+    
+    // Scroller - use dynamic colors
+    self.menu.scroller = self drawShader("white", 0, -500, 190, 17, self.menuColor, 255, 4);
+    self.menu.scrollerGlow = self drawShader("white", 0, -500, 194, 21, self.menuGlowColor, 0, 3);
+    
+    // Scroller borders
+    self.menu.scrollerBorderTop = self drawShader("white", 0, -500, 190, 1, (1, 1, 1), 0, 5);
+    self.menu.scrollerBorderBottom = self drawShader("white", 0, -483, 190, 1, (1, 1, 1), 0, 5);
+    
+    // Start the glow animation
+    self thread animateGlow();
 }
+
+
+
+animateGlow(){
+    self endon("disconnect");
+    self endon("destroyMenu");
+    self endon("stop_glow_animation");
+    level endon("game_ended");
+    
+    while(isDefined(self.menu))
+    {
+        if(self.menu.open)
+        {
+            // Pulse the glow elements
+            if(isDefined(self.menu.headerGlow))
+            {
+                self.menu.headerGlow fadeOverTime(1.5);
+                self.menu.headerGlow.alpha = 0.3;
+                self.menu.footerGlow fadeOverTime(1.5);
+                self.menu.footerGlow.alpha = 0.3;
+                self.menu.leftGlow fadeOverTime(1.5);
+                self.menu.leftGlow.alpha = 0.2;
+                self.menu.rightGlow fadeOverTime(1.5);
+                self.menu.rightGlow.alpha = 0.2;
+                self.menu.scrollerGlow fadeOverTime(1.5);
+                self.menu.scrollerGlow.alpha = 0.4;
+            }
+            
+            wait 1.5;
+            
+            if(isDefined(self.menu.headerGlow))
+            {
+                self.menu.headerGlow fadeOverTime(1.5);
+                self.menu.headerGlow.alpha = 0.1;
+                self.menu.footerGlow fadeOverTime(1.5);
+                self.menu.footerGlow.alpha = 0.1;
+                self.menu.leftGlow fadeOverTime(1.5);
+                self.menu.leftGlow.alpha = 0.05;
+                self.menu.rightGlow fadeOverTime(1.5);
+                self.menu.rightGlow.alpha = 0.05;
+                self.menu.scrollerGlow fadeOverTime(1.5);
+                self.menu.scrollerGlow.alpha = 0.2;
+            }
+            
+            wait 1.5;
+        }
+        else
+        {
+            wait 0.5;
+        }
+    }
+}
+
+
 
 StoreText(menu, title){
     self.menu.currentmenu = menu;
-    self.menu.title destroy();
+    
     string = "";
-    self.menu.title = drawText(title, "objective", 2, 0, 300, (1, 1, 1), 0, 1, 5);
-    self.menu.title FadeOverTime(0.3);
-    self.menu.title.alpha = 1;
-        
+            
     for(i = 0; i < self.menu.menuopt[menu].size; i++)
-    { string += self.menu.menuopt[menu][i]+ "\n"; }
+    { 
+        string += self.menu.menuopt[menu][i]+ "\n"; 
+    }
     self.menu.options destroy();
-    self.menu.options = drawText(string, "objective", 1.7, 300, 48, (1, 1, 1), 0, (0, 0, 0), 0, 4);
+    // Options with higher sort value to stay on top of scrollbar
+    self.menu.options = drawText(string, "objective", 1.7, 307, 75, (1, 1, 1), 0, (0, 0, 0), 0, 10);
     self.menu.options FadeOverTime(0.3);
     self.menu.options.alpha = 1;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 getPlayerName(player){
     playerName = getSubStr(player.name, 0, player.name.size);
@@ -839,6 +1080,85 @@ createZombieBottomLine(){
     bottomline setShader("white", 20, 1); // Horizontal line
     bottomline setWaypoint(true, true);
     return bottomline;
+}
+
+changeMenuColor(colorName){
+    // Set the color based on selection
+    switch(colorName){
+        case "red":
+            self.menuColor = (0.96, 0.04, 0.13);
+            self.menuGlowColor = (1, 0.2, 0.3);
+            break;
+        case "blue":
+            self.menuColor = (0.04, 0.4, 0.96);
+            self.menuGlowColor = (0.2, 0.6, 1);
+            break;
+        case "green":
+            self.menuColor = (0.04, 0.96, 0.2);
+            self.menuGlowColor = (0.2, 1, 0.4);
+            break;
+        case "purple":
+            self.menuColor = (0.6, 0.04, 0.96);
+            self.menuGlowColor = (0.8, 0.2, 1);
+            break;
+        case "orange":
+            self.menuColor = (0.96, 0.5, 0.04);
+            self.menuGlowColor = (1, 0.7, 0.2);
+            break;
+        case "cyan":
+            self.menuColor = (0.04, 0.8, 0.96);
+            self.menuGlowColor = (0.2, 0.9, 1);
+            break;
+        case "yellow":
+            self.menuColor = (0.96, 0.9, 0.04);
+            self.menuGlowColor = (1, 1, 0.2);
+            break;
+        case "white":
+            self.menuColor = (0.9, 0.9, 0.9);
+            self.menuGlowColor = (1, 1, 1);
+            break;
+        default:
+            self.menuColor = (0.96, 0.04, 0.13);
+            self.menuGlowColor = (1, 0.2, 0.3);
+            break;
+    }
+    
+    // Update all menu elements with new colors
+    self updateMenuColors();
+    self iPrintLn("Menu theme changed to ^2" + colorName);
+}
+
+updateMenuColors(){
+    // Update header colors
+    if(isDefined(self.menu.headerBG)){
+        self.menu.headerBG.color = self.menuColor;
+        self.menu.headerGlow.color = self.menuGlowColor;
+    }
+    
+    // Update footer colors
+    if(isDefined(self.menu.footerBG)){
+        self.menu.footerBG.color = self.menuColor;
+        self.menu.footerGlow.color = self.menuGlowColor;
+    }
+    
+    // Update border colors
+    if(isDefined(self.menu.leftBorder)){
+        self.menu.leftBorder.color = self.menuColor;
+        self.menu.leftGlow.color = self.menuGlowColor;
+        self.menu.rightBorder.color = self.menuColor;
+        self.menu.rightGlow.color = self.menuGlowColor;
+    }
+    
+    // Update scroller colors
+    if(isDefined(self.menu.scroller)){
+        self.menu.scroller.color = self.menuColor;
+        self.menu.scrollerGlow.color = self.menuGlowColor;
+    }
+    
+    // Update title glow color
+    if(isDefined(self.menu.title)){
+        self.menu.title.glowColor = self.menuColor;
+    }
 }
 
 
